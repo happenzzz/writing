@@ -1,0 +1,395 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>창의 글쓰기 — 수업용 프레젠테이션</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Hahmlet:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#f4f7fb; --panel:#ffffff; --ink:#1b1e28; --sub:#4b5563;
+  --line:#e6e8ee; --brand:#ffb703; --accent:#2a9d8f; --hot:#ef4444;
+  --hl:#fff4a3; --note:#eaf5ff;
+}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0;background:var(--bg);color:var(--ink);
+  font-family:"HCR Batang","함초롬바탕","HCR Batang Pro","Hahmlet",serif}
+.container{max-width:1280px;margin:0 auto;padding:14px 18px}
+.header{display:flex;align-items:center;gap:12px;background:linear-gradient(#fee4a6,#fff2cc);
+  border:2px solid #f0d79a;border-radius:16px;padding:10px 16px;margin:6px 0 12px}
+.header .icon{font-size:26px}
+.header .title{font-size:42px;font-weight:800;letter-spacing:.2px}
+.header .stage{margin-left:auto;font-weight:800;color:#7c6f57}
+.deck{position:relative;background:var(--panel);border:2px solid var(--line);border-radius:18px;box-shadow:0 12px 28px rgba(0,0,0,.08);min-height:74vh}
+.slide{display:none;padding:28px 32px}
+.slide.active{display:block}
+.h1{font-size:52px;margin:2px 0 10px}
+.h2{font-size:36px;margin:10px 0 8px}
+.lead{font-size:24px;color:var(--sub)}
+.bigbox{background:#fffaf0;border:3px solid #f2d6a5;border-radius:20px;padding:18px 20px;margin:14px 0;position:relative}
+.big{font-size:40px;line-height:1.4}
+.p{font-size:36px;line-height:1.7;margin:10px 0}
+.scroll{max-height:62vh;overflow:auto;background:#fcfdff;border:2px solid #dbe7ff;border-radius:18px;padding:18px}
+.scroll .p{font-size:30px}
+
+.badge{display:inline-block;background:#ffedd5;border:2px solid #f6c38b;border-radius:12px;padding:4px 10px;font-weight:800}
+.reveal{display:inline-block;border-bottom:4px dotted #a1a1aa;padding:0 6px;cursor:pointer;border-radius:6px}
+.reveal[data-state="hidden"]::after{content:" ？";color:#b45309;font-weight:800}
+.reveal[data-state="shown"]{background:var(--hl)}
+.hl{transition:background .2s ease}
+.hot{cursor:pointer;padding:0 .1em;border-bottom:4px solid transparent}
+.hot.on{background:linear-gradient(180deg,transparent 60%, var(--hl) 60%);border-bottom-color:#facc15}
+
+/* === 6·7페이지 말풍선(전구 아이콘, 큰 글씨, 드래그) === */
+.tip{
+  position:fixed; left:50%; bottom:24px; transform:translateX(-50%);
+  background:linear-gradient(135deg,#ffd161,#ffb703); color:#111827;
+  padding:24px 28px 24px 110px;          /* ← 전구 자리 확보 */
+  border-radius:26px; border:5px solid #f59e0b;
+  display:none; box-shadow:0 12px 28px rgba(0,0,0,.25);
+  font-weight:900; font-size:56px; line-height:1.25; z-index:50;
+  cursor:grab;
+}
+.tip:active{ cursor:grabbing; }
+.tip.show{ display:block; }
+/* 말풍선 꼬리 */
+.tip::after{
+  content:""; position:absolute; left:50%; bottom:-22px; transform:translateX(-50%);
+  border-width:22px 20px 0 20px; border-style:solid; border-color:#f59e0b transparent transparent transparent;
+}
+.tip::before{
+  content:""; position:absolute; left:50%; bottom:-18px; transform:translateX(-50%);
+  border-width:18px 16px 0 16px; border-style:solid; border-color:#ffd161 transparent transparent transparent;
+}
+/* 전구 아이콘 */
+.tip .bulb{ position:absolute; left:24px; top:50%; transform:translateY(-50%); width:64px; height:64px }
+.tip .bulb svg{ width:100%; height:100% }
+
+.card{background:#f6faff;border:2px solid #cfe4ff;border-radius:16px;padding:14px 16px;margin:10px 0;position:relative}
+.card .question{font-size:34px;font-weight:800;margin-bottom:6px}
+.card .note{font-size:20px;color:#64748b}
+
+.list{display:grid;grid-template-columns:1fr;gap:14px;margin-top:14px}
+.item{background:#ffffff;border:2px dashed #d0d7e2;border-radius:16px;padding:16px 18px;font-size:34px;cursor:pointer;position:relative;display:flex;align-items:center;gap:12px}
+.item.on{background:#fff7cc;border-style:solid;border-color:#f5d565}
+.item::before{content:"클릭";position:absolute;right:12px;top:10px;background:#e2f0ff;border:1px solid #bcdcff;border-radius:8px;padding:2px 8px;font-size:14px}
+.pencil{width:34px;height:34px;flex:0 0 auto}
+.blank{display:inline-block;min-width:16ch;border-bottom:3px dotted #c4c4c4}
+.answer{display:none}
+.item.on .blank{display:none}
+.item.on .answer{display:inline}
+
+.nav{position:absolute;inset:auto 0 12px 0;display:flex;justify-content:space-between;pointer-events:none}
+.nav button{pointer-events:auto;border:none;background:#1f2937;color:#fff;padding:14px 18px;border-radius:14px;opacity:.9;cursor:pointer;
+  font-size:20px;display:flex;align-items:center;gap:8px;box-shadow:0 4px 12px rgba(0,0,0,.2)}
+.nav button:disabled{opacity:.35;cursor:not-allowed}
+.progress{position:absolute;right:14px;top:10px;background:#111827;color:#fff;font-weight:800;font-size:14px;border-radius:10px;padding:4px 8px}
+
+@media (max-width:840px){
+  .h1{font-size:38px}.p{font-size:28px}.big{font-size:32px}.scroll .p{font-size:24px}
+  .tip{font-size:34px; padding-left:88px}
+  .tip .bulb{width:48px;height:48px}
+}
+@media print{.nav,.tip{display:none}}
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="header">
+    <span class="icon">📝</span>
+    <div class="title">창의 글쓰기를 하는 방법을 알아봅시다.</div>
+    <div class="stage" id="stageLabel">1 / 8</div>
+  </div>
+
+  <div class="deck" id="deck">
+
+    <!-- 1페이지: 개념 (빈칸 클릭-토글) -->
+    <section class="slide active">
+      <div class="h1">① 창의 글쓰기란 무엇일까요?</div>
+      <div class="bigbox">
+        <div class="p">
+          창의 글쓰기는 책을 읽고 단순히 <span class="reveal" data-prompt="ㅈㄱㄹ" data-answer="줄거리" data-state="hidden">(빈칸)</span>를 적는 것이 아니라,
+          책의 내용을 <span class="reveal" data-prompt="ㅈㅅㅇ ㅅㄱ ㅇㄱ" data-answer="자신의 삶과 연결" data-state="hidden">(빈칸)</span> 지은 글,
+          책을 통해 <span class="reveal" data-prompt="ㅈㅅㅇ ㅅㅇ ㅅㅊ" data-answer="자신의 삶을 성찰하는" data-state="hidden">(빈칸)</span> 글,
+          책을 통해 <span class="reveal" data-prompt="ㄴㄲ ㄱㅈ" data-answer="느낀 감정" data-state="hidden">(빈칸)</span>을
+          <span class="reveal" data-prompt="ㅅㅈㅎㄱ" data-answer="초등학생의 정서가 드러나게 솔직하게" data-state="hidden">(빈칸)</span> 적은 글 등을 의미한다.
+        </div>
+        <div class="lead"></div>
+      </div>
+    </section>
+
+    <!-- 2페이지: 전체 글 (스크롤) -->
+    <section class="slide">
+      <div class="h1">② 창의 글쓰기 예시 글을 읽어 봅시다.</div>
+      <div class="scroll">
+        <p class="p">나는 《몬스터 차일드》라는 책을 읽고 나서 이런 질문을 품게 되었다. 사람들은 왜 자신과 다른 사람을 괴물이라 부르며, 정상과 비정상의 잣대로 나누려 할까? 책의 제목만 보았을 때는 주인공이 성격이 못됐거나 행동이 얄미운 아이일 거라고 생각했다. 그러나 책을 읽고 보니 전혀 달랐다. 오히려 오하늬는 MCS라는 희귀한 병을 가지고 태어난 아이였고, 그것 때문에 차별을 받아야 했다. 나는 이 책을 통해서 ‘사람을 구분 짓는 기준은 무엇일까?’, ‘나 자신은 어떻게 바라봐야 할까?’라는 탐구 질문을 깊게 생각하게 되었다.</p>
+        <p class="p">책 속에서 하늬와 산들이는 MCS 때문에 늘 불안과 차별 속에서 살아야 했다. 하지만 치료센터에서 만난 소장님은 그들을 환자가 아니라 단지 조금 다른 존재로 바라보았다. 소장님의 말 덕분에 하늬는 자신을 감추는 대신 있는 그대로 받아들이는 용기를 얻었다. 특히 마음속 깊이 남은 대사는 “넌 이미 정상이야. 너는 치료받을 필요가 없어. 나무가 나무이고, 새가 새이듯 너는 너일 뿐이야.”라는 말이었다. 이 대사는 하늬에게도, 그리고 나에게도 자기 자신을 사랑하라는 힘을 주었다. 나는 이 장면에서 사람을 괴물로 만드는 건 병이 아니라 사회의 시선이라는 사실을 다시 느꼈다.</p>
+        <p class="p">나는 이 책을 읽으며 나 자신의 경험도 떠올렸다. 11살이 되면서 사소한 일에도 이유 없이 화가 나곤 했다. 동생이 장난을 치거나 가족이 내 마음을 이해하지 못할 때, 가슴속에서 알 수 없는 화가 활화산처럼 끓어올라 스스로 감당하기 힘들었다. 가족들은 “사춘기라서 그래”라는 말로 넘겼지만, 그 말만으로는 내 마음이 전혀 위로되지 않았다. 나는 그런 감정을 숨기고 싶었지만 잘 되지 않아 답답했다. 그러나 하늬의 이야기를 읽으며 나 안에도 ‘사춘기 괴물’이 있다는 걸 인정하게 되었고, 그것마저도 나의 일부로 받아들여야 한다는 깨달음을 얻게 되었다.</p>
+        <p class="p">만약 나의 사춘기 괴물을 계속 억누르며 살아간다면, 아마 나는 더 힘들어지고 내 마음을 미워하게 될 것이다. 하지만 하늬가 자기 자신을 있는 그대로 받아들였듯, 나도 내 감정을 인정하고 사랑하려고 한다. 꽃이 색깔과 모양, 향기가 모두 다른 것처럼 사람도 다 다르다. 어떤 사람은 장미를 좋아하고, 어떤 사람은 해바라기를 좋아할 수 있다. 그렇다고 해바라기가 노란색을 숨기지 않듯이 나도 나의 감정을 숨길 필요는 없다. 나는 매일 조금씩 나를 긍정하며, 괴물이 올라올 때면 ‘이 또한 나니까 괜찮아’라고 말하는 연습을 하려고 한다.</p>
+        <p class="p">사람들이 흔히 말하는 ‘평범함, 보통, 정상’은 누가 정한 절대적인 기준이 아니다. 오히려 그런 말이 사람을 차별하고 괴물로 만들기도 한다. 나의 탐구 질문에 대한 답은 이렇다. 사람은 누구나 각자의 모습 그대로 존중받아야 하며, 있는 그대로의 나도 이미 소중하다. 하늬처럼 나도 내 안의 사춘기 괴물을 사랑하며, 그것이 나를 특별하게 만든다고 믿는다. 나는 평범하거나 정상이라는 말보다 다르고 남다른 것이 더 아름답다고 생각한다. 그래서 앞으로도 나 자신을 사랑하고, 다른 사람의 다름도 존중하며 살아가겠다는 다짐으로 이 글을 마친다.</p>
+      </div>
+      <div class="lead"></div>
+    </section>
+
+    <!-- 3페이지: 동기·탐구질문 찾기 (요청대로 a,b는 밑줄 제외) -->
+    <section class="slide">
+      <div class="h1">③ 책을 읽은 동기나 탐구 질문을 찾아 <u>밑줄</u>로 표시해 봅시다.</div>
+      <div class="card">
+        <div class="question"></div>
+        <div class="p">
+          <span>나는 《몬스터 차일드》라는 책을 읽고 나서 이런 질문을 품게 되었다.</span>
+          <span> 사람들은 왜 자신과 다른 사람을 괴물이라 부르며, 정상과 비정상의 잣대로 나누려 할까?</span>
+          <span> 책의 제목만 보았을 때는 주인공이 성격이 못됐거나 행동이 얄미운 아이일 거라고 생각했다.</span>
+          <span> 그러나 책을 읽고 보니 전혀 달랐다. 오히려 오하늬는 MCS라는 희귀한 병을 가지고 태어난 아이였고, 그것 때문에 차별을 받아야 했다.</span>
+          <span class="hot" data-key="c"> 나는 이 책을 통해서 ‘사람을 구분 짓는 기준은 무엇일까?’, ‘나 자신은 어떻게 바라봐야 할까?’라는 탐구 질문을 깊게 생각하게 되었다.</span>
+        </div>
+        <div class="note">글의 도입부는 책을 읽은 동기나 탐구 질문에 대해 씁니다.</div>
+      </div>
+    </section>
+
+    <!-- 4페이지: 인상 깊은 대사 찾기 -->
+    <section class="slide">
+      <div class="h1">④ 책 속 인상 깊은 <u>대사</u>가 쓰인 부분을 찾아 밑줄로 표시해 봅시다.</div>
+      <div class="card">
+        <div class="question"></div>
+        <div class="p">
+          책 속에서 하늬와 산들이는 MCS 때문에 늘 불안과 차별 속에서 살아야 했다.
+          하지만 치료센터에서 만난 소장님은 그들을 환자가 아니라 단지 조금 다른 존재로 바라보았다.
+          소장님의 말 덕분에 하늬는 자신을 감추는 대신 있는 그대로 받아들이는 용기를 얻었다.
+          특히 마음속 깊이 남은 대사는 <span class="hot" data-key="quote">“넌 이미 정상이야. 너는 치료받을 필요가 없어. 나무가 나무이고, 새가 새이듯 너는 너일 뿐이야.”</span>라는 말이었다.
+          이 대사는 하늬에게도, 그리고 나에게도 자기 자신을 사랑하라는 힘을 주었다.
+          나는 이 장면에서 사람을 괴물로 만드는 건 병이 아니라 사회의 시선이라는 사실을 다시 느꼈다.
+        </div>
+        <div class="note">두번째 문장은 책에 대해 요약하거나 인상 깊은 문장, 대사 등을 씁니다.</div>
+      </div>
+    </section>
+
+    <!-- 5페이지: 느낌/깨달음 찾기 -->
+    <section class="slide">
+      <div class="h1">⑤ 나의 <u>느낌</u>이나 <u>깨달음</u>을 쓴 부분에 밑줄을 그어 봅시다.</div>
+      <div class="card">
+        <div class="question"></div>
+        <div class="p">
+          나는 이 책을 읽으며 나 자신의 경험도 떠올렸다. 11살이 되면서 사소한 일에도 이유 없이 화가 나곤 했다.
+          동생이 장난을 치거나 가족이 내 마음을 이해하지 못할 때, <span class="hot" data-key="feel1">가슴속에서 알 수 없는 화가 활화산처럼 끓어올라 스스로 감당하기 힘들었다.</span>
+          가족들은 “사춘기라서 그래”라는 말로 넘겼지만, 그 말만으로는 내 마음이 전혀 위로되지 않았다.
+          나는 그런 감정을 숨기고 싶었지만 잘 되지 않아 답답했다.
+          그러나 하늬의 이야기를 읽으며 <span class="hot" data-key="realize">나 안에도 ‘사춘기 괴물’이 있다는 걸 인정하게 되었고,
+          그것마저도 나의 일부로 받아들여야 한다는 깨달음을 얻게 되었다.</span>
+        </div>
+        <div class="note">책을 읽고 나의 경험, 느낌, 그로 인한 깨달음을 적습니다.</div>
+      </div>
+    </section>
+
+    <!-- ⑥ 생각을 더 깊게 쓰기 -->
+    <section class="slide" id="slide6">
+      <div class="h1">⑥ 생각을 더 깊게 쓰기</div>
+      <div class="card">
+        <div class="question">글을 클릭해 보세요.</div>
+        <div class="p" id="deepArea">
+          만약 나의 사춘기 괴물을 계속 억누르며 살아간다면, 아마 나는 더 힘들어지고 내 마음을 미워하게 될 것이다.
+          하지만 하늬가 자기 자신을 있는 그대로 받아들였듯, 나도 내 감정을 인정하고 사랑하려고 한다.
+          꽃이 색깔과 모양, 향기가 모두 다른 것처럼 사람도 다 다르다.
+          어떤 사람은 장미를 좋아하고, 어떤 사람은 해바라기를 좋아할 수 있다.
+          그렇다고 해바라기가 노란색을 숨기지 않듯이 나도 나의 감정을 숨길 필요는 없다.
+          나는 매일 조금씩 나를 긍정하며, 괴물이 올라올 때면 ‘이 또한 나니까 괜찮아’라고 말하는 연습을 하려고 한다.
+        </div>
+      </div>
+
+      <!-- 말풍선 (전구 아이콘 + 드래그 가능) -->
+      <div class="tip" id="tip6" role="note" aria-live="polite">
+        <span class="bulb" aria-hidden="true">
+          <svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+            <defs><linearGradient id="g6" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0" stop-color="#fff7c2"/><stop offset="1" stop-color="#ffd161"/></linearGradient></defs>
+            <path d="M32 6c-10.5 0-19 8.5-19 19 0 7 3.8 13.1 9.6 16.4V46a4 4 0 0 0 4 4h9a4 4 0 0 0 4-4v-4.6C47.2 38.1 51 32 51 25c0-10.5-8.5-19-19-19z" fill="url(#g6)" stroke="#e3a008" stroke-width="2"/>
+            <path d="M24 46h16" stroke="#e3a008" stroke-width="3" stroke-linecap="round"/>
+            <rect x="26" y="50" width="12" height="6" rx="3" fill="#e3a008"/>
+            <path d="M22 53h20" stroke="#e3a008" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+        </span>
+        책과 나의 경험을 <u>깊이 연관지어</u> 쓰면 좋아요! (비교·상상·질문·실천)
+      </div>
+    </section>
+
+    <!-- ⑦ 탐구 질문에 답하며 마무리 -->
+    <section class="slide" id="slide7">
+      <div class="h1">⑦ 탐구 질문에 답하며 마무리</div>
+      <div class="card">
+        <div class="question">글을 클릭해 보세요.</div>
+        <div class="p" id="endArea">
+          사람들이 흔히 말하는 ‘평범함, 보통, 정상’은 누가 정한 절대적인 기준이 아니다.
+          오히려 그런 말이 사람을 차별하고 괴물로 만들기도 한다.
+          나의 탐구 질문에 대한 답은 이렇다. 사람은 누구나 각자의 모습 그대로 존중받아야 하며, 있는 그대로의 나도 이미 소중하다.
+          하늬처럼 나도 내 안의 사춘기 괴물을 사랑하며, 그것이 나를 특별하게 만든다고 믿는다.
+          나는 평범하거나 정상이라는 말보다 다르고 남다른 것이 더 아름답다고 생각한다.
+          그래서 앞으로도 나 자신을 사랑하고, 다른 사람의 다름도 존중하며 살아가겠다는 다짐으로 이 글을 마친다.
+        </div>
+      </div>
+
+      <!-- 말풍선 (전구 아이콘 + 드래그 가능) -->
+      <div class="tip" id="tip7" role="note" aria-live="polite">
+        <span class="bulb" aria-hidden="true">
+          <svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+            <defs><linearGradient id="g7" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0" stop-color="#fff7c2"/><stop offset="1" stop-color="#ffd161"/></linearGradient></defs>
+            <path d="M32 6c-10.5 0-19 8.5-19 19 0 7 3.8 13.1 9.6 16.4V46a4 4 0 0 0 4 4h9a4 4 0 0 0 4-4v-4.6C47.2 38.1 51 32 51 25c0-10.5-8.5-19-19-19z" fill="url(#g7)" stroke="#e3a008" stroke-width="2"/>
+            <path d="M24 46h16" stroke="#e3a008" stroke-width="3" stroke-linecap="round"/>
+            <rect x="26" y="50" width="12" height="6" rx="3" fill="#e3a008"/>
+            <path d="M22 53h20" stroke="#e3a008" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+        </span>
+        탐구 질문에 대한 <u>나의 답</u>을 또렷하게 쓰고, <u>다짐</u>으로 마무리!
+      </div>
+    </section>
+
+    <!-- 8페이지: 정리(연필 아이콘 + 빈칸, 클릭 시 문장 토글) -->
+    <section class="slide">
+      <div class="h1">⑧ 창의 글쓰기 쓰는 방법을 정리해 봅시다.</div>
+      <div class="lead"></div>
+      <div class="list">
+        <div class="item" data-open="1">
+          <svg class="pencil" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M3 21l3.5-1 11-11-2.5-2.5-11 11L3 21z" stroke="#0ea5e9" stroke-width="1.5" fill="#93c5fd"/>
+            <path d="M14 5l2.5 2.5 2-2a2 2 0 0 0 0-2.8l-.2-.2a2 2 0 0 0-2.8 0l-2 2z" fill="#fde68a" stroke="#f59e0b" stroke-width="1"/>
+          </svg>
+          <span class="blank"></span><span class="answer">책을 읽은 동기·탐구 질문을 쓴다.</span>
+        </div>
+        <div class="item" data-open="2">
+          <svg class="pencil" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M3 21l3.5-1 11-11-2.5-2.5-11 11L3 21z" stroke="#0ea5e9" stroke-width="1.5" fill="#93c5fd"/>
+            <path d="M14 5l2.5 2.5 2-2a2 2 0 0 0 0-2.8l-.2-.2a2 2 0 0 0-2.8 0l-2 2z" fill="#fde68a" stroke="#f59e0b" stroke-width="1"/>
+          </svg>
+          <span class="blank"></span><span class="answer">책의 장면 요약/인상 깊은 대사를 쓴다.</span>
+        </div>
+        <div class="item" data-open="3">
+          <svg class="pencil" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M3 21l3.5-1 11-11-2.5-2.5-11 11L3 21z" stroke="#0ea5e9" stroke-width="1.5" fill="#93c5fd"/>
+            <path d="M14 5l2.5 2.5 2-2a2 2 0 0 0 0-2.8l-.2-.2a2 2 0 0 0-2.8 0l-2 2z" fill="#fde68a" stroke="#f59e0b" stroke-width="1"/>
+          </svg>
+          <span class="blank"></span><span class="answer">나의 경험과 느낌, 깨달음을 쓴다.</span>
+        </div>
+        <div class="item" data-open="4">
+          <svg class="pencil" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M3 21l3.5-1 11-11-2.5-2.5-11 11L3 21z" stroke="#0ea5e9" stroke-width="1.5" fill="#93c5fd"/>
+            <path d="M14 5l2.5 2.5 2-2a2 2 0 0 0 0-2.8l-.2-.2a2 2 0 0 0-2.8 0l-2 2z" fill="#fde68a" stroke="#f59e0b" stroke-width="1"/>
+          </svg>
+          <span class="blank"></span><span class="answer">생각을 더 심화해서 쓴다. (비교·가정·질문·상상·실천 등)</span>
+        </div>
+        <div class="item" data-open="5">
+          <svg class="pencil" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M3 21l3.5-1 11-11-2.5-2.5-11 11L3 21z" stroke="#0ea5e9" stroke-width="1.5" fill="#93c5fd"/>
+            <path d="M14 5l2.5 2.5 2-2a2 2 0 0 0 0-2.8l-.2-.2a2 2 0 0 0-2.8 0l-2 2z" fill="#fde68a" stroke="#f59e0b" stroke-width="1"/>
+          </svg>
+          <span class="blank"></span><span class="answer">탐구 질문에 대한 답·마무리 문장을 쓴다.</span>
+        </div>
+      </div>
+    </section>
+
+    <div class="progress" id="progress">1 / 8</div>
+    <div class="nav">
+      <button id="prevBtn" aria-label="이전 슬라이드"><span>◀</span> 이전</button>
+      <button id="nextBtn" aria-label="다음 슬라이드">다음 <span>▶</span></button>
+    </div>
+  </div>
+</div>
+
+<script>
+const slides=[...document.querySelectorAll('.slide')];
+let i=0;
+function show(n){
+  i=Math.max(0,Math.min(slides.length-1,n));
+  slides.forEach((s,idx)=>s.classList.toggle('active',idx===i));
+  document.getElementById('stageLabel').textContent=(i+1)+" / "+slides.length;
+  document.getElementById('progress').textContent=(i+1)+" / "+slides.length;
+  document.getElementById('prevBtn').disabled=i===0;
+  document.getElementById('nextBtn').disabled=i===slides.length-1;
+  history.replaceState(null,"","#s"+(i+1));
+}
+document.getElementById('prevBtn').onclick=()=>show(i-1);
+document.getElementById('nextBtn').onclick=()=>show(i+1);
+window.addEventListener('keydown',e=>{if(e.key==='ArrowRight')show(i+1); if(e.key==='ArrowLeft')show(i-1)});
+if(location.hash.startsWith('#s')){const n=parseInt(location.hash.slice(2))-1;show(isNaN(n)?0:n);} else show(0);
+
+// toggle reveal (page1 blanks)
+document.querySelectorAll('.reveal').forEach(el=>{
+  const prompt=el.dataset.prompt || '보기';
+  const ans=el.dataset.answer || '';
+  el.textContent=prompt;
+  el.dataset.state='hidden';
+  el.addEventListener('click',()=>{
+    if(el.dataset.state==='hidden'){ el.innerHTML=ans; el.dataset.state='shown'; }
+    else { el.textContent=prompt; el.dataset.state='hidden'; }
+  });
+});
+
+// highlight toggles for .hot (pages 3~5)
+document.querySelectorAll('.hot').forEach(el=>{
+  el.addEventListener('click',()=> el.classList.toggle('on'));
+});
+
+// page 6/7 tips (click anywhere in text area)
+const tip6=document.getElementById('tip6');
+const deepArea=document.getElementById('deepArea');
+if(deepArea) deepArea.addEventListener('click',()=> tip6.classList.toggle('show'));
+
+const tip7=document.getElementById('tip7');
+const endArea=document.getElementById('endArea');
+if(endArea) endArea.addEventListener('click',()=> tip7.classList.toggle('show'));
+
+// page 8 items toggle (pencil + blank -> answer)
+document.querySelectorAll('.item').forEach(it=>{
+  it.addEventListener('click',()=> it.classList.toggle('on'));
+});
+
+/* === 말풍선 드래그 이동 기능 (6·7페이지 공통) === */
+function makeDraggable(el){
+  let dragging=false, startX=0, startY=0, startLeft=0, startTop=0;
+
+  const down=(e)=>{
+    dragging=true;
+    const p=e.touches?e.touches[0]:e;
+    const rect=el.getBoundingClientRect();
+
+    // 고정(bottom/transform) → 좌표(left/top)로 전환
+    el.style.left=rect.left+'px';
+    el.style.top=rect.top+'px';
+    el.style.bottom='auto';
+    el.style.transform='none';
+
+    startX=p.clientX; startY=p.clientY;
+    startLeft=rect.left; startTop=rect.top;
+    e.preventDefault();
+  };
+
+  const move=(e)=>{
+    if(!dragging) return;
+    const p=e.touches?e.touches[0]:e;
+    let x=startLeft+(p.clientX-startX);
+    let y=startTop +(p.clientY-startY);
+
+    // 화면 바깥으로 못 나가게
+    const vw=window.innerWidth, vh=window.innerHeight;
+    const w=el.offsetWidth, h=el.offsetHeight;
+    x=Math.max(0,Math.min(vw-w,x));
+    y=Math.max(0,Math.min(vh-h,y));
+
+    el.style.left=x+'px';
+    el.style.top =y+'px';
+  };
+
+  const up=()=>{ dragging=false; };
+
+  el.addEventListener('mousedown',down);
+  el.addEventListener('touchstart',down,{passive:false});
+  window.addEventListener('mousemove',move);
+  window.addEventListener('touchmove',move,{passive:false});
+  window.addEventListener('mouseup',up);
+  window.addEventListener('touchend',up);
+}
+makeDraggable(tip6);
+makeDraggable(tip7);
+</script>
+</body>
+</html>
